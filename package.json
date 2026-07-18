@@ -1,0 +1,14 @@
+{
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  },
+  "scripts": {
+    "dev": "concurrently \"cd server && nodemon server.js\" \"cd client && npm run dev\"",
+    "server": "cd server && nodemon server.js",
+    "client": "cd client && npm run dev"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}
