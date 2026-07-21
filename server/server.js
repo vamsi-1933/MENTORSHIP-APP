@@ -9,6 +9,8 @@ const Session = require('./models/Session');
 const Mentorship = require('./models/Mentorship');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 dotenv.config();
 connectDB();
@@ -16,6 +18,7 @@ connectDB();
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(passport.initialize()); 
 
 // --- Middleware ---
 const protect = async (req, res, next) => {
@@ -29,53 +32,101 @@ const protect = async (req, res, next) => {
   } else { res.status(401).json({ message: 'No token' }); }
 };
 
+// --- PASSPORT CONFIG ---
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: "http://localhost:5000/api/auth/google/callback"
+  },
+  async (accessToken, refreshToken, profile, done) => {
+    try {
+      const email = profile.emails[0].value;
+      if (!email.endsWith('@smail.iitm.ac.in')) {
+        return done(new Error("Only @smail.iitm.ac.in emails allowed"), null);
+      }
+      let user = await User.findOne({ email });
+      if (!user) {
+        user = await User.create({
+          name: profile.displayName,
+          email,
+          role: 'mentee',
+          department: 'Not Specified',
+          isVerified: true
+        });
+      }
+      return done(null, user);
+    } catch (err) {
+      return done(err, null);
+    }
+  }
+));
+
+
+
+// --- GOOGLE AUTH ROUTES (Public, no protect needed) ---
+app.get('/api/auth/google', 
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+// In server.js
+app.get('/api/auth/google/callback', 
+  passport.authenticate('google', { 
+    failureRedirect: 'http://localhost:5174/login?error=invalid_domain',
+    session: false
+  }),
+  (req, res) => {
+    const token = jwt.sign(
+      { id: req.user._id, role: req.user.role }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '7d' }
+    );
+    
+    // ✅ Save user object too (encode as URL param or use a different approach)
+    const userData = encodeURIComponent(JSON.stringify({
+      _id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+      department: req.user.department
+    }));
+    
+    res.redirect(`http://localhost:5174/dashboard?token=${token}&user=${userData}`);
+  }
+);
 // --- Routes ---
 
 // Auth
 // Inside your /api/auth/login route
 // LOGIN ROUTE - Place this BEFORE app.listen()
+// In server.js - Standard Login Route
 app.post('/api/auth/login', async (req, res) => {
-   console.log(' LOGIN ATTEMPT:', req.body.email);
   try {
     const { email, password } = req.body;
-
-    // Validate email domain
-    if (!email || !email.endsWith('@smail.iitm.ac.in')) {
-      return res.status(403).json({ 
-        message: 'Access denied. Please use your @smail.iitm.ac.in email address.' 
-      });
-    }
-
-    // Find user
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials or account not found.' });
+    
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Compare password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials or account not found.' });
-    }
-
-    // Generate token
     const token = jwt.sign(
-      { id: user._id }, 
-      process.env.JWT_SECRET || 'fallback-secret-key-change-in-production', 
-      { expiresIn: '30d' }
+      { id: user._id, role: user.role }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '7d' }
     );
 
+    // ✅ RETURN USER DATA EXPLICITLY
     res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      department: user.department,
-      token
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department
+      }
     });
   } catch (err) {
-    console.error('Login error:', err.message);
-    res.status(500).json({ message: 'Server error during login' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -479,6 +530,26 @@ app.post('/api/feedback', protect, async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+});
+
+// Example Express Route for updating a user
+app.put('/users/:id',protect, async (req, res) => {
+  try {
+    const { name, role, department, hostel } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.id, 
+      { name, role, department, hostel }, 
+      { new: true } // Return the updated document
+    );
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.get('/api/auth/google', (req, res, next) => {
+  console.log('Redirecting to Google with callback:', "http://localhost:5000/api/auth/google/callback");
+  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
 });
 
 const PORT = process.env.PORT || 5000;

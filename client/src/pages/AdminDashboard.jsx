@@ -4,7 +4,7 @@ import axios from 'axios';
 import Papa from 'papaparse';
 import { 
   Users, UserPlus, Upload, FileSpreadsheet, AlertCircle, 
-  CheckCircle2, Loader2, X, Download, Trash2 
+  CheckCircle2, Loader2, X, Download, Trash2, Search, Edit3, Save
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -12,6 +12,17 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('single'); // 'single' | 'bulk'
   
+  // --- SEARCH STATE ---
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // --- EDIT MODAL STATE ---
+  const [isEditing, setIsEditing] = useState(false);
+  const [editUser, setEditUser] = useState(null); // The user object currently being edited
+  const [updateForm, setUpdateForm] = useState({ 
+    name: '', email: '', role: 'mentee', department: '', hostel: '' 
+  });
+  const [updating, setUpdating] = useState(false);
+
   // Single User Form
   const [singleForm, setSingleForm] = useState({ 
     name: '', email: '', password: '', role: 'mentee', department: '', hostel: '' 
@@ -66,7 +77,6 @@ export default function AdminDashboard() {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        // Validate required columns
         const requiredCols = ['name', 'email', 'role', 'department'];
         const missing = requiredCols.filter(col => !results.meta.fields.includes(col));
         
@@ -76,7 +86,6 @@ export default function AdminDashboard() {
           return;
         }
         
-        // Validate email domains in preview
         const invalidEmails = results.data.filter(row => !row.email?.endsWith('@smail.iitm.ac.in'));
         if (invalidEmails.length > 0) {
           setParseError(`${invalidEmails.length} rows have invalid email domain (must end with @smail.iitm.ac.in)`);
@@ -125,18 +134,55 @@ export default function AdminDashboard() {
     URL.revokeObjectURL(url);
   };
 
+  // --- EDIT USER LOGIC ---
+  const openEditModal = (user) => {
+    setEditUser(user);
+    setUpdateForm({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      department: user.department || '',
+      hostel: user.hostel || ''
+    });
+    setIsEditing(true);
+  };
+
+  const handleUpdateUser = async (e) => {
+    e.preventDefault();
+    setUpdating(true);
+    try {
+      // Assuming PUT /api/users/:id endpoint exists
+      await axios.put(`http://localhost:5000/api/users/${editUser._id}`, updateForm, { headers });
+      alert('✅ User updated successfully!');
+      setIsEditing(false);
+      fetchUsers();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Update failed');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Filter users based on search term
+  const filteredUsers = users.filter(user => 
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (user.department && user.department.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   if (loading) return <div className="p-10 text-center"><Loader2 className="animate-spin mx-auto w-8 h-8" /></div>;
 
   return (
-    <div className="p-8 max-w-7xl bg-gradient-to-r from-teal-400 to-yellow-200 mx-auto space-y-8">
+    <div className="p-8 max-w-7xl bg-gradient-to-r from-teal-400 to-yellow-200 mx-auto space-y-8 min-h-screen">
       <DashboardHeader 
-    title="Admin Dashboard" 
-    subtitle="Manage users, roles, and institute settings" 
-
-/>
+        title="Admin Dashboard" 
+        subtitle="Manage users, roles, and institute settings" 
+      />
+      
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-amber-300  flex items-center gap-2">
-          
+        <h1 className="text-3xl font-bold text-amber-300 flex items-center gap-2">
+          {/* Title content removed as per original code structure */}
         </h1>
         <div className="bg-white rounded-lg border border-gray-200 p-1 flex shadow-sm">
           <button 
@@ -158,7 +204,6 @@ export default function AdminDashboard() {
         </div>
       </div>
       
-  
       {/* SINGLE USER FORM */}
       {activeTab === 'single' && (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
@@ -197,7 +242,6 @@ export default function AdminDashboard() {
             </button>
           </div>
 
-          {/* File Upload Zone */}
           <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-indigo-400 transition-colors relative">
             <input 
               type="file" 
@@ -211,7 +255,6 @@ export default function AdminDashboard() {
             <p className="text-xs text-slate-400 mt-1">Required columns: name, email, role, department</p>
           </div>
 
-          {/* Parse Error */}
           {parseError && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
@@ -219,7 +262,6 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* Preview Table */}
           {previewData.length > 0 && (
             <div>
               <p className="text-sm font-medium text-slate-700 mb-2">Preview (First 5 rows):</p>
@@ -246,7 +288,6 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* Import Button & Result */}
           {previewData.length > 0 && (
             <div className="space-y-4">
               <button 
@@ -283,11 +324,24 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* USERS TABLE */}
+      {/* USERS TABLE WITH SEARCH & EDIT */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-          <h2 className="text-xl font-semibold justify-center text-slate-800">All Users ({users.length})</h2>
+        <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <h2 className="text-xl font-semibold text-slate-800">All Users ({filteredUsers.length})</h2>
+          
+          {/* Search Bar */}
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-4 h-4" />
+            <input 
+              type="text" 
+              placeholder="Search users..." 
+              className="w-full pl-10 pr-4 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50">
@@ -297,10 +351,11 @@ export default function AdminDashboard() {
                 <th className="p-4 font-medium text-slate-600">Role</th>
                 <th className="p-4 font-medium text-slate-600">Department</th>
                 <th className="p-4 font-medium text-slate-600">Hostel</th>
+                <th className="p-4 font-medium text-slate-600 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {users.map(u => (
+              {filteredUsers.map(u => (
                 <tr key={u._id} className="hover:bg-slate-50 transition-colors">
                   <td className="p-4 font-medium text-slate-800">{u.name}</td>
                   <td className="p-4 text-slate-600">{u.email}</td>
@@ -315,15 +370,105 @@ export default function AdminDashboard() {
                   </td>
                   <td className="p-4 text-slate-600">{u.department || '-'}</td>
                   <td className="p-4 text-slate-600">{u.hostel || '-'}</td>
+                  <td className="p-4 text-right">
+                    <button 
+                      onClick={() => openEditModal(u)}
+                      className="text-indigo-600 hover:text-indigo-800 p-2 hover:bg-indigo-50 rounded-full transition-colors"
+                      title="Edit User"
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                  </td>
                 </tr>
               ))}
-              {users.length === 0 && (
-                <tr><td colSpan="5" className="p-8 text-center text-slate-400">No users found</td></tr>
+              {filteredUsers.length === 0 && (
+                <tr><td colSpan="6" className="p-8 text-center text-slate-400">No users found matching your search.</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* EDIT USER MODAL */}
+      {isEditing && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative">
+            <button 
+              onClick={() => setIsEditing(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X size={20} />
+            </button>
+            
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-slate-800">
+              <Edit3 size={20} /> Edit User
+            </h2>
+            
+            <form onSubmit={handleUpdateUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input 
+                  className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  value={updateForm.name} 
+                  onChange={e => setUpdateForm({...updateForm, name: e.target.value})} 
+                  required 
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email (Read-only)</label>
+                <input 
+                  className="w-full border p-2 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed" 
+                  value={updateForm.email} 
+                  disabled 
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <select 
+                  className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  value={updateForm.role} 
+                  onChange={e => setUpdateForm({...updateForm, role: e.target.value})}
+                >
+                  <option value="mentee">Mentee</option>
+                  <option value="mentor">Mentor</option>
+                  <option value="coordinator">Coordinator</option>
+                  <option value="super_coordinator">Super Coordinator</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                <input 
+                  className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  value={updateForm.department} 
+                  onChange={e => setUpdateForm({...updateForm, department: e.target.value})} 
+                  required 
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Hostel</label>
+                <input 
+                  className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  value={updateForm.hostel} 
+                  onChange={e => setUpdateForm({...updateForm, hostel: e.target.value})} 
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={updating} 
+                className="w-full bg-indigo-600 text-white p-2.5 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
+              >
+                {updating ? <><Loader2 className="animate-spin w-4 h-4" /> Saving...</> : <><Save size={16} /> Save Changes</>}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

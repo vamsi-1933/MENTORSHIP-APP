@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { FcGoogle } from 'react-icons/fc';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../lib/api';
 import { Handshake, Mail, Lock, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
 
@@ -8,48 +9,83 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // ✅ HANDLE GOOGLE CALLBACK TOKEN
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const googleError = searchParams.get('error');
+
+    if (token) {
+      localStorage.setItem('token', token);
+      // For Google login, we might not have full user data yet, 
+      // so we fetch it or navigate to a generic dashboard first
+      navigate('/admin-dashboard'); // Adjust based on your role logic
+    } else if (googleError === 'invalid_domain') {
+      setError("Access Denied: Please use your @smail.iitm.ac.in email.");
+    }
+  }, [searchParams, navigate]);
 
   // ✅ REAL-TIME DOMAIN VALIDATION
   const isValidDomain = email.endsWith('@smail.iitm.ac.in');
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setError('');
+  
+  if (!isValidDomain) {
+    setError('Please use a valid @smail.iitm.ac.in email address.');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const { data } = await authAPI.login({ email, password });
     
-    if (!isValidDomain) {
-      setError('Please use a valid @smail.iitm.ac.in email address.');
-      return;
-    }
+    // Save token
+    localStorage.setItem('token', data.token);
+    
+    // ✅ FIX: Handle nested or flat user responses
+    const userData = data.user || {
+      _id: data.id || data._id,
+      name: data.name,
+      email: data.email || email,
+      role: data.role,
+      department: data.department
+    };
+    
+    localStorage.setItem('user', JSON.stringify(userData));
+    console.log('✅ Saved user:', userData); // Debug log
 
-    setLoading(true);
+    const roleRoutes = {
+      admin: '/admin-dashboard',
+      super_coordinator: '/super-coordinator-dashboard',
+      coordinator: '/coordinator-dashboard',
+      mentor: '/mentor-dashboard',
+      mentee: '/mentee-dashboard'
+    };
 
-    try {
-      const { data } = await authAPI.login({ email, password });
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data));
+    navigate(roleRoutes[userData.role] || '/');
+    
+  } catch (err) {
+    setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+  } finally {
+    setLoading(false);
+  }
+};
 
-      const roleRoutes = {
-        admin: '/admin-dashboard',
-        super_coordinator: '/super_coordinator-dashboard',
-        coordinator: '/coordinator-dashboard',
-        mentor: '/mentor-dashboard',
-        mentee: '/mentee-dashboard'
-      };
-
-      navigate(roleRoutes[data.role] || '/');
-      
-    } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
-    } finally {
-      setLoading(false);
-    }
+  const handleGoogleLogin = () => {
+    // Redirects to backend which handles OAuth flow
+    window.location.href = 'http://localhost:5000/api/auth/google';
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 p-4">
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none">
+      <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
         <div className="absolute top-20 left-20 w-72 h-72 bg-indigo-500 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500 rounded-full blur-3xl"></div>
       </div>
@@ -147,6 +183,25 @@ export default function Login() {
             )}
           </button>
         </form>
+
+        {/* Divider */}
+        <div className="relative my-8">
+          <div className="absolute inset-1 flex items-center">
+            <div className="w-full border-b border-white/10"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-transparent text-indigo-300/70 backdrop-blur-sm">Or continue with</span>
+          </div>
+        </div>
+
+        {/* Google Button */}
+        <button 
+          onClick={handleGoogleLogin}
+          className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 py-3.5 rounded-xl hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium"
+        >
+          <FcGoogle size={22} />
+          Sign in with IITM Google
+        </button>
 
         {/* Footer */}
         <div className="mt-8 pt-6 border-t border-white/10 text-center">
