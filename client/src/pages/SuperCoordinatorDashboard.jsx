@@ -20,7 +20,7 @@ export default function SuperCoordinatorDashboard() {
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const { data } = await axios.get('http://localhost:5000/api/analytics/departments', {
+      const { data } = await axios.get('http://localhost:8000/api/analytics/departments', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -59,7 +59,7 @@ export default function SuperCoordinatorDashboard() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/announcements', announceForm, {
+      await axios.post('http://localhost:8000/api/announcements', announceForm, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert('✅ Announcement broadcasted successfully!');

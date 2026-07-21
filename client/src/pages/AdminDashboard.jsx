@@ -43,7 +43,7 @@ export default function AdminDashboard() {
 
   const fetchUsers = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/users', { headers });
+      const { data } = await axios.get('http://localhost:8000/api/users', { headers });
       setUsers(data);
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
@@ -53,7 +53,7 @@ export default function AdminDashboard() {
     e.preventDefault();
     setCreating(true);
     try {
-      await axios.post('http://localhost:5000/api/users', singleForm, { headers });
+      await axios.post('http://localhost:8000/api/users', singleForm, { headers });
       alert('✅ User created successfully!');
       setSingleForm({ name: '', email: '', password: '', role: 'mentee', department: '', hostel: '' });
       fetchUsers();
@@ -110,7 +110,7 @@ export default function AdminDashboard() {
       const formData = new FormData();
       formData.append('file', csvFile);
       
-      const { data } = await axios.post('http://localhost:5000/api/users/bulk-import', formData, {
+      const { data } = await axios.post('http://localhost:8000/api/users/bulk-import', formData, {
         headers: { ...headers, 'Content-Type': 'multipart/form-data' }
       });
       
@@ -152,7 +152,7 @@ export default function AdminDashboard() {
     setUpdating(true);
     try {
       // Assuming PUT /api/users/:id endpoint exists
-      await axios.put(`http://localhost:5000/api/users/${editUser._id}`, updateForm, { headers });
+      await axios.put(`http://localhost:8000/api/users/${editUser._id}`, updateForm, { headers });
       alert('✅ User updated successfully!');
       setIsEditing(false);
       fetchUsers();

@@ -29,7 +29,7 @@ export default function MenteeDashboard() {
   const fetchData = async () => {
     try {
       // Fetch sessions assigned to this mentee
-      const { data } = await axios.get('http://localhost:5000/api/sessions/mentee/' + user._id, { headers });
+      const { data } = await axios.get('http://localhost:8000/api/sessions/mentee/' + user._id, { headers });
       
       setSessions(data.sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate)));
       
@@ -43,7 +43,7 @@ export default function MenteeDashboard() {
   const handleVerifySubmit = async () => {
     try {
       await axios.put(
-        `http://localhost:5000/api/sessions/${verifyModal.session._id}/verify`,
+        `http://localhost:8000/api/sessions/${verifyModal.session._id}/verify`,
         verifyForm,
         { headers }
       );
@@ -63,7 +63,7 @@ export default function MenteeDashboard() {
     
     setSubmittingFeedback(true);
     try {
-      await axios.post('http://localhost:5000/api/feedback', {
+      await axios.post('http://localhost:8000/api/feedback', {
         rating: feedbackForm.rating,
         comment: feedbackForm.comment,
         department: user.department

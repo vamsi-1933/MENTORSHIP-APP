@@ -79,7 +79,7 @@ const handleLogin = async (e) => {
 
   const handleGoogleLogin = () => {
     // Redirects to backend which handles OAuth flow
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    window.location.href = 'http://localhost:8000/api/auth/google';
   };
 
   return (

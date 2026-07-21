@@ -36,7 +36,7 @@ const protect = async (req, res, next) => {
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "http://localhost:5000/api/auth/google/callback"
+    callbackURL: "http://localhost:8000/api/auth/google/callback"
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
@@ -548,9 +548,9 @@ app.put('/users/:id',protect, async (req, res) => {
 });
 
 app.get('/api/auth/google', (req, res, next) => {
-  console.log('Redirecting to Google with callback:', "http://localhost:5000/api/auth/google/callback");
+  console.log('Redirecting to Google with callback:', "http://localhost:8000/api/auth/google/callback");
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

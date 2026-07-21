@@ -58,7 +58,7 @@ const fetchData = async () => {
     console.log('🔄 Fetching mentor data...');
 
     // 1. Fetch mentorships
-    const mentRes = await axios.get('http://localhost:5000/api/mentorships', { 
+    const mentRes = await axios.get('http://localhost:8000/api/mentorships', { 
       headers,
       params: { mentor: user._id }
     });
@@ -73,7 +73,7 @@ const fetchData = async () => {
     })));
 
     // 2. Fetch sessions
-    const sessRes = await axios.get('http://localhost:5000/api/sessions', { headers });
+    const sessRes = await axios.get('http://localhost:8000/api/sessions', { headers });
     
     console.log('📊 Sessions fetched:', sessRes.data.length); // ← CRITICAL DEBUG LOG
     console.log('📊 Session data:', sessRes.data); // ← SEE WHAT BACKEND RETURNS
@@ -164,7 +164,7 @@ const fetchData = async () => {
     console.log('📤 Submitting session:', payload); // Debug log
 
     const response = await axios.post(
-      'http://localhost:5000/api/sessions', 
+      'http://localhost:8000/api/sessions', 
       payload, 
       { headers }
     );

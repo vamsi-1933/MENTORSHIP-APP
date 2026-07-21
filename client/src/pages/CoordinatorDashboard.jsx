@@ -33,9 +33,9 @@ export default function CoordinatorDashboard() {
 
       // Fetch all necessary data in parallel
       const [sessRes, mentRes, usersRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/sessions', { headers }),
-        axios.get('http://localhost:5000/api/mentorships', { headers }),
-        axios.get('http://localhost:5000/api/users', { headers })
+        axios.get('http://localhost:8000/api/sessions', { headers }),
+        axios.get('http://localhost:8000/api/mentorships', { headers }),
+        axios.get('http://localhost:8000/api/users', { headers })
       ]);
 
       // Filter by coordinator's department
@@ -71,7 +71,7 @@ export default function CoordinatorDashboard() {
         return;
       }
 
-      await axios.post('http://localhost:5000/api/mentorships', assignForm, {
+      await axios.post('http://localhost:8000/api/mentorships', assignForm, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -87,7 +87,7 @@ export default function CoordinatorDashboard() {
   const handleReviewSession = async (action) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/sessions/${reviewModal.session._id}/review`, 
+      await axios.put(`http://localhost:8000/api/sessions/${reviewModal.session._id}/review`, 
         { action }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );

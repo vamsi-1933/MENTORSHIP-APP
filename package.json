@@ -3,7 +3,7 @@
     "concurrently": "^10.0.3"
   },
   "scripts": {
-    "dev": "concurrently \"cd server && node server.js\" \"cd client && npm run dev\"",
+    "dev": "concurrently \"cd server && npm start\" \"cd client && npm run dev\"",
     "server": "cd server && node server.js",
     "client": "cd client && npm run dev"
   },
