@@ -6,9 +6,10 @@ const User = require("../models/User");
 passport.use(
     new GoogleStrategy(
         {
-            clientID: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            callbackURL: process.env.GOOGLE_CALLBACK_URL,
+            clientID: (process.env.GOOGLE_CLIENT_ID || "").trim(),
+            clientSecret: (process.env.GOOGLE_CLIENT_SECRET || "").trim(),
+            // Trim — Render/UI pastes often add a trailing newline (%0A), which Google rejects
+            callbackURL: (process.env.GOOGLE_CALLBACK_URL || "").trim(),
         },
 
         async (accessToken, refreshToken, profile, done) => {

@@ -1,18 +1,22 @@
 const jwt = require("jsonwebtoken");
 const passport = require("passport");
 
+const clientUrl = () =>
+  (process.env.CLIENT_URL || "http://localhost:5174").trim().replace(/\/$/, "");
+
 exports.googleLogin = passport.authenticate("google", {
   scope: ["profile", "email"],
 });
 
 exports.googleCallback = [
-  passport.authenticate("google", {
-    session: false,
-    failureRedirect: `${process.env.CLIENT_URL}/`,
-  }),
+  (req, res, next) => {
+    passport.authenticate("google", {
+      session: false,
+      failureRedirect: `${clientUrl()}/?error=unauthorized`,
+    })(req, res, next);
+  },
 
   (req, res) => {
-
     const token = jwt.sign(
       {
         id: req.user._id,
@@ -24,12 +28,8 @@ exports.googleCallback = [
       }
     );
 
-    res.redirect(
-      `${process.env.CLIENT_URL}/dashboard?token=${token}&user=${encodeURIComponent(
-        JSON.stringify(req.user)
-      )}`
-    );
-
+    // Token only — embedding the full user JSON made redirects fragile
+    res.redirect(`${clientUrl()}/dashboard?token=${encodeURIComponent(token)}`);
   },
 ];
 

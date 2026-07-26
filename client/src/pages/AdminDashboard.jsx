@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { FileUp, CheckCircle2, AlertCircle } from "lucide-react";
 import DashboardHeader from "../../components/DashboardHeader";
 import StatsCard from "../../components/StatsCard";
 import Loader from "../../components/Loader";
@@ -9,6 +10,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [csvFile, setCsvFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState(null);
+  const fileRef = useRef(null);
 
   useEffect(() => {
     loadDashboard();
@@ -20,6 +23,10 @@ export default function AdminDashboard() {
       setDashboard(res.data.data);
     } catch (err) {
       console.error(err);
+      setMessage({
+        type: "error",
+        text: "Could not load dashboard stats.",
+      });
     } finally {
       setLoading(false);
     }
@@ -27,179 +34,126 @@ export default function AdminDashboard() {
 
   const uploadCSV = async () => {
     if (!csvFile) {
-      alert("Please select a CSV file.");
+      setMessage({ type: "error", text: "Please select a CSV file." });
       return;
     }
 
     try {
       setUploading(true);
+      setMessage(null);
 
       const formData = new FormData();
       formData.append("file", csvFile);
 
-      await adminAPI.uploadUsers(formData);
+      const res = await adminAPI.uploadUsers(formData);
+      const data = res.data;
 
-      alert("Users imported successfully.");
+      setMessage({
+        type: "success",
+        text: `Imported ${data.imported ?? 0} users${
+          data.skipped ? ` · skipped ${data.skipped}` : ""
+        }.`,
+      });
 
       setCsvFile(null);
-
+      if (fileRef.current) fileRef.current.value = "";
       loadDashboard();
-
     } catch (err) {
-
-      alert(
-        err.response?.data?.message ||
-        "Unable to upload CSV."
-      );
-
+      setMessage({
+        type: "error",
+        text: err.response?.data?.message || "Unable to upload CSV.",
+      });
     } finally {
-
       setUploading(false);
-
     }
   };
 
   if (loading) return <Loader />;
 
   return (
-    <>
+    <div className="admin-page">
       <DashboardHeader
-        title="Admin Dashboard"
-        subtitle="Manage users and platform statistics"
+        title="Overview"
+        subtitle="Monitor roles, activity, and onboard users into SAATHI."
       />
 
-      <div className="grid grid-cols-3 gap-6 mb-8">
+      <section className="admin-section">
+        <h2 className="admin-section__title">People by role</h2>
+        <div className="admin-grid admin-grid--roles">
+          <StatsCard title="Total users" value={dashboard?.totalUsers} tone="ink" />
+          <StatsCard title="Mentors" value={dashboard?.mentors} tone="sky" />
+          <StatsCard title="Mentees" value={dashboard?.mentees} tone="aqua" />
+          <StatsCard title="Coordinators" value={dashboard?.coordinators} tone="sand" />
+          <StatsCard title="Super coordinators" value={dashboard?.superCoordinators} tone="yellow" />
+          <StatsCard title="Admins" value={dashboard?.admins} tone="deep" />
+        </div>
+      </section>
 
-        <StatsCard
-          title="Total Users"
-          value={dashboard.totalUsers}
-        />
+      <section className="admin-section">
+        <h2 className="admin-section__title">Platform activity</h2>
+        <div className="admin-grid admin-grid--activity">
+          <StatsCard title="Active mentorships" value={dashboard?.totalMentorships} tone="sky" />
+          <StatsCard title="Interactions" value={dashboard?.totalInteractions} tone="aqua" />
+          <StatsCard title="Feedback submitted" value={dashboard?.totalFeedbackSubmitted} tone="yellow" />
+        </div>
+      </section>
 
-        <StatsCard
-          title="Mentors"
-          value={dashboard.mentors}
-          color="bg-green-600"
-        />
+      <section id="upload" className="admin-panel">
+        <div className="admin-panel__head">
+          <div>
+            <h2 className="admin-panel__title">Upload users</h2>
+            <p className="admin-panel__desc">
+              Import a CSV with Roll No, Name, EmailId, Role, Mobile, Gender, Program, and Department.
+            </p>
+          </div>
+          <div className="admin-panel__badge">
+            <FileUp size={18} />
+            CSV
+          </div>
+        </div>
 
-        <StatsCard
-          title="Mentees"
-          value={dashboard.mentees}
-          color="bg-blue-600"
-        />
-
-        <StatsCard
-          title="Coordinators"
-          value={dashboard.coordinators}
-          color="bg-orange-500"
-        />
-
-        <StatsCard
-          title="Super Coordinators"
-          value={dashboard.superCoordinators}
-          color="bg-purple-600"
-        />
-
-        <StatsCard
-          title="Admins"
-          value={dashboard.admins}
-          color="bg-red-600"
-        />
-
-        <StatsCard
-          title="Mentorships"
-          value={dashboard.totalMentorships}
-        />
-
-        <StatsCard
-          title="Interactions"
-          value={dashboard.totalInteractions}
-          color="bg-indigo-600"
-        />
-
-        <StatsCard
-          title="Feedback"
-          value={dashboard.totalFeedbackSubmitted}
-          color="bg-teal-600"
-        />
-
-      </div>
-            {/* Upload Users */}
-
-      <div className="bg-white rounded-xl shadow p-6 mb-8">
-
-        <h2 className="text-2xl font-semibold mb-5">
-          Upload Users CSV
-        </h2>
-
-        <div className="flex items-center gap-4">
-
-          <input
-            type="file"
-            accept=".csv"
-            onChange={(e) => setCsvFile(e.target.files[0])}
-            className="border rounded-lg p-2"
-          />
+        <div className="admin-upload">
+          <label className="admin-upload__drop">
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv"
+              onChange={(e) => {
+                setCsvFile(e.target.files?.[0] || null);
+                setMessage(null);
+              }}
+            />
+            <span className="admin-upload__drop-title">
+              {csvFile ? csvFile.name : "Choose a CSV file"}
+            </span>
+            <span className="admin-upload__drop-hint">
+              {csvFile
+                ? `${Math.max(1, Math.round(csvFile.size / 1024))} KB selected`
+                : "Accepted format: .csv"}
+            </span>
+          </label>
 
           <button
+            type="button"
             onClick={uploadCSV}
-            disabled={uploading}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg disabled:bg-gray-400"
+            disabled={uploading || !csvFile}
+            className="admin-upload__btn"
           >
-            {uploading ? "Uploading..." : "Upload CSV"}
+            {uploading ? "Uploading…" : "Upload CSV"}
           </button>
-
         </div>
 
-        {csvFile && (
-          <p className="mt-3 text-sm text-gray-600">
-            Selected File: <strong>{csvFile.name}</strong>
-          </p>
+        {message && (
+          <div className={`admin-alert admin-alert--${message.type}`}>
+            {message.type === "success" ? (
+              <CheckCircle2 size={18} />
+            ) : (
+              <AlertCircle size={18} />
+            )}
+            <p>{message.text}</p>
+          </div>
         )}
-
-      </div>
-
-      {/* Platform Statistics */}
-
-      <div className="bg-white rounded-xl shadow p-6">
-
-        <h2 className="text-2xl font-semibold mb-5">
-          Platform Overview
-        </h2>
-
-        <div className="grid grid-cols-2 gap-6">
-
-          <div className="border rounded-lg p-4">
-            <p className="text-gray-500">Total Users</p>
-            <h3 className="text-3xl font-bold mt-2">
-              {dashboard.totalUsers}
-            </h3>
-          </div>
-
-          <div className="border rounded-lg p-4">
-            <p className="text-gray-500">Total Mentorships</p>
-            <h3 className="text-3xl font-bold mt-2">
-              {dashboard.totalMentorships}
-            </h3>
-          </div>
-
-          <div className="border rounded-lg p-4">
-            <p className="text-gray-500">Total Interactions</p>
-            <h3 className="text-3xl font-bold mt-2">
-              {dashboard.totalInteractions}
-            </h3>
-          </div>
-
-          <div className="border rounded-lg p-4">
-            <p className="text-gray-500">Total Feedback Submitted</p>
-            <h3 className="text-3xl font-bold mt-2">
-              {dashboard.totalFeedbackSubmitted}
-            </h3>
-          </div>
-
-        </div>
-
-      </div>
-
-    </>
+      </section>
+    </div>
   );
 }

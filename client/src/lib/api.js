@@ -1,7 +1,11 @@
 import axios from "axios";
 
+const API_BASE = (
+  import.meta.env.VITE_API_URL || "http://localhost:8000"
+).replace(/\/$/, "");
+
 const API = axios.create({
-  baseURL: "http://localhost:8000/api",
+  baseURL: `${API_BASE}/api`,
 });
 
 API.interceptors.request.use((config) => {
@@ -18,8 +22,9 @@ export default API;
 
 export const authAPI = {
   googleLogin: () => {
-    window.location.href = "http://localhost:8000/api/auth/google";
+    window.location.href = `${API_BASE}/api/auth/google`;
   },
+  me: () => API.get("/auth/me"),
 };
 
 export const adminAPI = {
@@ -45,4 +50,4 @@ export const feedbackAPI = {
   submit: (data) => API.post("/feedback", data),
 };
 
-export { API };
+export { API, API_BASE };

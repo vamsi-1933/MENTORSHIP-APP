@@ -83,7 +83,7 @@ export default function MentorDashboard() {
 
       />
 
-      <div className="grid grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
 
         <StatsCard
 
@@ -131,11 +131,11 @@ export default function MentorDashboard() {
                 Assigned Mentees
             ========================================================== */}
 
-      <div className="bg-white rounded-xl shadow p-6 mb-8">
+      <div className="dash-box mb-8">
 
-        <div className="flex justify-between items-center mb-5">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
 
-          <h2 className="text-2xl font-semibold">
+          <h2 className="text-xl sm:text-2xl font-semibold">
 
             Assigned Mentees
 
@@ -147,7 +147,7 @@ export default function MentorDashboard() {
               setShowAddMentee(true)
             }
 
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg w-full sm:w-auto"
 
           >
 
@@ -250,9 +250,9 @@ export default function MentorDashboard() {
 
       {showAddMentee && (
 
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center p-4 z-50">
 
-          <div className="bg-white rounded-xl w-[420px] p-6">
+          <div className="bg-white rounded-xl w-full max-w-[420px] p-5 sm:p-6">
 
             <h2 className="text-xl font-semibold mb-5">
 
@@ -353,17 +353,17 @@ export default function MentorDashboard() {
       )}
       {/* Create Interaction */}
 
-      <div className="bg-white rounded-xl shadow p-6 mb-8">
+      <div className="dash-box mb-8">
 
-        <div className="flex justify-between items-center mb-5">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
 
-          <h2 className="text-2xl font-semibold">
+          <h2 className="text-xl sm:text-2xl font-semibold">
             Create Interaction
           </h2>
 
           <button
             onClick={() => setShowInteraction(!showInteraction)}
-            className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg"
+            className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg w-full sm:w-auto"
           >
             {showInteraction ? "Close" : "New Interaction"}
           </button>
@@ -478,7 +478,7 @@ export default function MentorDashboard() {
                 Select Mentees
               </label>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
 
                 {dashboard.assignedMentees.map((mentee) => (
 
@@ -551,7 +551,7 @@ export default function MentorDashboard() {
           Interaction History
       ========================================================== */}
 
-      <div className="bg-white rounded-xl shadow p-6">
+      <div className="dash-box">
 
         <h2 className="text-2xl font-semibold mb-5">
           Interaction History
