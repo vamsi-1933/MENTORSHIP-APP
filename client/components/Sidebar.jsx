@@ -1,14 +1,14 @@
-import {
-  LayoutDashboard,
-  Users,
-  Upload,
-} from "lucide-react";
+import { useState } from "react";
+import { LayoutDashboard, Users, Upload, Bot } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import AIChatModal from "./AIChatModal";
 
 export default function Sidebar() {
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const role = user?.role;
   const location = useLocation();
+  const [showAI, setShowAI] = useState(false);
+  const canAccessAI = ["admin", "coordinator", "super_coordinator"].includes(role);
 
   const adminChildren = [
     {
@@ -63,73 +63,105 @@ export default function Sidebar() {
     role === "admin" && location.pathname.startsWith("/admin-dashboard");
 
   return (
-    <aside className="dash-sidebar">
-      <div className="dash-sidebar__brand">
-        <img src="/saathi-logo.png" alt="" className="dash-sidebar__logo" />
-        <div>
-          <p className="dash-sidebar__title">SAATHI</p>
-          <p className="dash-sidebar__tag">Mentorship</p>
+    <>
+      <aside className="dash-sidebar">
+        <div className="dash-sidebar__brand">
+          <img src="/saathi-logo.png" alt="" className="dash-sidebar__logo" />
+          <div>
+            <p className="dash-sidebar__title">SAATHI</p>
+            <p className="dash-sidebar__tag">Mentorship</p>
+          </div>
         </div>
-      </div>
 
-      <p className="dash-sidebar__label">Menu</p>
+        <p className="dash-sidebar__label">Menu</p>
 
-      <nav className="dash-sidebar__nav">
-        {role === "admin" ? (
-          <>
-            <NavLink
-              to="/admin-dashboard"
-              end
-              className={() =>
-                `dash-sidebar__link${isAdminHome ? " is-active" : ""}`
-              }
+        <nav className="dash-sidebar__nav">
+          {role === "admin" ? (
+            <>
+              <NavLink
+                to="/admin-dashboard"
+                end
+                className={() =>
+                  `dash-sidebar__link${isAdminHome ? " is-active" : ""}`
+                }
+              >
+                <Users size={18} strokeWidth={1.75} />
+                <span>Workspace</span>
+              </NavLink>
+
+              <div className="dash-sidebar__tree">
+                {adminChildren.map((item) => {
+                  const hashActive =
+                    item.path.includes("#") && location.hash === "#upload";
+                  const overviewActive =
+                    item.end &&
+                    location.pathname === "/admin-dashboard" &&
+                    location.hash !== "#upload";
+                  const active = hashActive || overviewActive;
+
+                  return (
+                    <NavLink
+                      key={item.name}
+                      to={item.path}
+                      end={item.end}
+                      className={() =>
+                        `dash-sidebar__sublink${active ? " is-active" : ""}`
+                      }
+                    >
+                      {item.icon}
+                      <span>{item.name}</span>
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            simpleLinks[role]?.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.path}
+                end={item.end}
+                className={({ isActive }) =>
+                  `dash-sidebar__link${isActive ? " is-active" : ""}`
+                }
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </NavLink>
+            ))
+          )}
+
+          {/* ✅ CONDITIONAL AI CHAT BUTTON */}
+          {canAccessAI && (
+            <button
+              type="button"
+              onClick={() => setShowAI(true)}
+              className="dash-sidebar__link"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                width: "100%",
+                padding: "10px 14px",
+                marginTop: "auto",
+                background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
             >
-              <Users size={18} strokeWidth={1.75} />
-              <span>Workspace</span>
-            </NavLink>
+              <Bot size={18} strokeWidth={1.75} />
+              <span>Ask Saathi AI</span>
+            </button>
+          )}
+        </nav>
+      </aside>
 
-            <div className="dash-sidebar__tree">
-              {adminChildren.map((item) => {
-                const hashActive =
-                  item.path.includes("#") && location.hash === "#upload";
-                const overviewActive =
-                  item.end &&
-                  location.pathname === "/admin-dashboard" &&
-                  location.hash !== "#upload";
-                const active = hashActive || overviewActive;
-
-                return (
-                  <NavLink
-                    key={item.name}
-                    to={item.path}
-                    end={item.end}
-                    className={() =>
-                      `dash-sidebar__sublink${active ? " is-active" : ""}`
-                    }
-                  >
-                    {item.icon}
-                    <span>{item.name}</span>
-                  </NavLink>
-                );
-              })}
-            </div>
-          </>
-        ) : (
-          simpleLinks[role]?.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.path}
-              end={item.end}
-              className={({ isActive }) =>
-                `dash-sidebar__link${isActive ? " is-active" : ""}`
-              }
-            >
-              {item.icon}
-              <span>{item.name}</span>
-            </NavLink>
-          ))
-        )}
-      </nav>
-    </aside>
+      {/* ✅ AI CHAT MODAL */}
+      {showAI && <AIChatModal onClose={() => setShowAI(false)} />}
+    </>
   );
 }

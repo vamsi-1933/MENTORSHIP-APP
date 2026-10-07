@@ -10,6 +10,7 @@ const feedbackRoutes = require("./routes/feedbackRoutes");
 const mentorDashboardRoutes = require("./routes/mentorDashboardRoutes");
 const menteeDashboardRoutes = require("./routes/menteeDashboardRoutes");
 const coordinatorDashboardRoutes = require("./routes/coordinatorDashboardRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 
 
 const connectDB = require("./config/db");
@@ -67,6 +68,7 @@ app.use(passport.initialize());
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Health Check
 app.get("/", (req, res) => {
