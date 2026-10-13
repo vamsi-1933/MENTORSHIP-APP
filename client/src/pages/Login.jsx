@@ -48,7 +48,7 @@ export default function Login() {
               alt=""
               className="landing__cta-icon"
             />
-            Sign in
+            Sign in with IITM SMAIL
           </button>
         </div>
       </main>
